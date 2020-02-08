@@ -37,7 +37,7 @@ SHEET_FILE = 'sheet.pdf';
 
 PAGE_SIZE = A4;
 CHARACTERS_PER_PAGE = 7;
-GRID_OFFSET = 20;#30
+GRID_OFFSET = 30;#30
 RADICAL_HEIGHT = 0;
 RADICAL_PINYIN_HEIGHT = 10;
 CHARACTERS_PER_ROW = 10;
@@ -47,7 +47,7 @@ CHARACTER_ROW_HEIGHT = SQUARE_SIZE*2+RADICAL_HEIGHT+RADICAL_PINYIN_HEIGHT;
 SQUARE_PADDING = SQUARE_SIZE/15;
 RADICAL_PADDING = RADICAL_HEIGHT/10;
 FONT_NAME = 'SourceHanSansTC-Normal'
-FONT_SIZE = 13;
+FONT_SIZE = 11;#13
 HEADER_FONT_SIZE = 0;#20
 FOOTER_FONT_SIZE = 0;#10
 PAGE_NUMBER_FONT_SIZE = 10;
@@ -57,13 +57,13 @@ STROKE_SIZE = SQUARE_SIZE*0.6; # size of stroke order character,0.5
 STROKE_PADDING = SQUARE_PADDING*0.3;
 STROKES_W = CHARACTER_ROW_WIDTH - SQUARE_SIZE - TEXT_PADDING;
 MAX_STROKES = math.floor(STROKES_W / (STROKE_SIZE+STROKE_PADDING));
-HEADER_PADDING = 40;
+HEADER_PADDING = 0;#40
 NAME_OFFSET = 300;
 SCORE_OFFSET = 150;
 PAGE_NUMBER_X_OFFSET = 40;
 PAGE_NUMBER_Y_OFFSET = 20;
-MAX_INPUT_CHARACTERS = 50;
-MAX_TITLE_LENGTH = 20;
+MAX_INPUT_CHARACTERS = 500;
+MAX_TITLE_LENGTH = 30;
 GUIDE_LINE_WIDTH = 5;
 FIRST_CHARACTER_ROW_Y = PAGE_SIZE[1]-HEADER_PADDING-GRID_OFFSET/2;
 WORD_FONT_SIZE = 11;
@@ -533,6 +533,7 @@ def get_spanning_translations(characters, words):
     return spanning_translations;
 
 def generate_sheet(makemeahanzi_path, working_dir, title, guide):
+    print("Generating")
     if len(title) > MAX_TITLE_LENGTH:
         raise GenException('Title length exceeded (' + str(len(title)) + \
                 '/' + str(MAX_TITLE_LENGTH) + ')');
@@ -635,11 +636,16 @@ def main(argv):
         info_mode = True;
         sheet_mode = True;
 
-    characters='这是我的第一次来这里'
+    characters = ""
+    file_input = open("characters.txt","r")
+    for i in file_input.read():
+        characters += i
+    #characters=characters[1:20]
+    print(characters)
     makemeahanzi = '/home/jasper/Github/cwg/makemeahanzi'
     cedict = '/home/jasper/Github/cwg/cedict'
-    title = 'Vocabulary'
-    guide = 'star'
+    title = 'HSK1 Vocabulary'
+    guide = 'cross_star'
 
     # if makemeahanzi == '' \
     #         or (info_mode and cedict == '') \
@@ -651,9 +657,7 @@ def main(argv):
     #     exit(1);
 
     working_dir = os.getcwd();
-    print("pre")
     try:
-        print("post")
         guide_val = get_guide(guide);
         if info_mode == sheet_mode:
             generate_infos(makemeahanzi, cedict, working_dir, characters);
@@ -663,7 +667,6 @@ def main(argv):
         elif info_mode:
             generate_infos(makemeahanzi, cedict, working_dir, characters);
         else:
-            print("Generating")
             generate_sheet(makemeahanzi, working_dir, title, guide_val);
     except GenException as e:
         print(str(e));
