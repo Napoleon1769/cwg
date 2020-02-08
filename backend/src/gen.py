@@ -36,9 +36,9 @@ WORDS_FILE = 'word_infos.json';
 SHEET_FILE = 'sheet.pdf';
 
 PAGE_SIZE = A4;
-CHARACTERS_PER_PAGE = 5;
-GRID_OFFSET = 30;
-RADICAL_HEIGHT = 30;
+CHARACTERS_PER_PAGE = 7;
+GRID_OFFSET = 20;#30
+RADICAL_HEIGHT = 0;
 RADICAL_PINYIN_HEIGHT = 10;
 CHARACTERS_PER_ROW = 10;
 CHARACTER_ROW_WIDTH = PAGE_SIZE[0]-2*GRID_OFFSET;
@@ -48,12 +48,12 @@ SQUARE_PADDING = SQUARE_SIZE/15;
 RADICAL_PADDING = RADICAL_HEIGHT/10;
 FONT_NAME = 'SourceHanSansTC-Normal'
 FONT_SIZE = 13;
-HEADER_FONT_SIZE = 20;
-FOOTER_FONT_SIZE = 10;
+HEADER_FONT_SIZE = 0;#20
+FOOTER_FONT_SIZE = 0;#10
 PAGE_NUMBER_FONT_SIZE = 10;
 TEXT_PADDING = SQUARE_SIZE/4;
 DEFINITION_PADDING = TEXT_PADDING*2;
-STROKE_SIZE = SQUARE_SIZE*0.5; # size of stroke order character
+STROKE_SIZE = SQUARE_SIZE*0.6; # size of stroke order character,0.5
 STROKE_PADDING = SQUARE_PADDING*0.3;
 STROKES_W = CHARACTER_ROW_WIDTH - SQUARE_SIZE - TEXT_PADDING;
 MAX_STROKES = math.floor(STROKES_W / (STROKE_SIZE+STROKE_PADDING));
@@ -291,6 +291,7 @@ def draw_character_row(working_dir, canvas, character_info, y, guide): #TODO: re
 
     # draw radical
     should_draw_radical = len(character_info.radical_pinyin) > 0;
+    should_draw_radical = False
     if should_draw_radical:
         radical_size = RADICAL_HEIGHT-2*RADICAL_PADDING;
         radical_x = GRID_OFFSET + (SQUARE_SIZE - radical_size)/2
@@ -309,23 +310,30 @@ def draw_character_row(working_dir, canvas, character_info, y, guide): #TODO: re
         canvas.drawString(radical_pinyin_x, radical_pinyin_y, radical_pinyin);
 
     # draw pinyin
+    draw_pinyin = False
+
     pinyin = character_info.pinyin[0];
     pinyin_w = stringWidth(pinyin, FONT_NAME, FONT_SIZE);
     pinyin_h = FONT_SIZE*0.8; # TODO
     pinyin_x = GRID_OFFSET + SQUARE_SIZE + TEXT_PADDING;
     pinyin_y = y - TEXT_PADDING - pinyin_h;
-    canvas.drawString(pinyin_x, pinyin_y, pinyin);
+    if draw_pinyin:
+        canvas.drawString(pinyin_x, pinyin_y, pinyin);
 
     # draw definition
     definition_x = pinyin_x + pinyin_w + DEFINITION_PADDING;
     definition_y = pinyin_y;
+    definition_x = 0
+    definition_y = 0
+    pinyin_h = 0
     max_w = CHARACTER_ROW_WIDTH - SQUARE_SIZE - TEXT_PADDING \
             - pinyin_w - DEFINITION_PADDING - TEXT_PADDING;
     definition = character_info.definition.replace(';',',').split(',');
     definition = combine_and_shorten_definition(definition, \
                     DEFINITION_SEPARATOR, \
                     max_w, FONT_NAME, FONT_SIZE).text;
-    canvas.drawString(definition_x, definition_y, definition);
+    if draw_pinyin:
+        canvas.drawString(definition_x, definition_y, definition);
 
     # draw stroke order
     character = character_info.character;
@@ -543,23 +551,23 @@ def generate_sheet(makemeahanzi_path, working_dir, title, guide):
     words_with_spanning_translation = get_spanning_translations( \
                                         character_infos, words);
 
-    draw_header(c, title, HEADER_FONT_SIZE, \
-            PAGE_SIZE[1]-HEADER_PADDING);
+    # draw_header(c, title, HEADER_FONT_SIZE, \
+    #         PAGE_SIZE[1]-HEADER_PADDING);
     for i in range(len(character_infos)):
         i_mod = i % CHARACTERS_PER_PAGE;
         page_number = int(i / CHARACTERS_PER_PAGE + 1);
         if i != 0 and i_mod == 0:
-            draw_footer(c, FOOTER_FONT_SIZE, y-CHARACTER_ROW_HEIGHT - \
-                    GRID_OFFSET/2);
+            # draw_footer(c, FOOTER_FONT_SIZE, y-CHARACTER_ROW_HEIGHT - \
+            #         GRID_OFFSET/2);
             draw_page_number(c, i / CHARACTERS_PER_PAGE, PAGE_NUMBER_FONT_SIZE);
             draw_words(c, character_infos, words, page_number-1, \
                         words_with_spanning_translation);
             c.showPage();
-            draw_header(c, title, HEADER_FONT_SIZE, \
-                    PAGE_SIZE[1]-HEADER_PADDING);
+            # draw_header(c, title, HEADER_FONT_SIZE, \
+            #         PAGE_SIZE[1]-HEADER_PADDING);
         info = character_infos[i];
         create_character_svg(working_dir, info);
-        create_radical_svg(makemeahanzi_path, working_dir, info);
+        #create_radical_svg(makemeahanzi_path, working_dir, info);
         create_stroke_order_svgs(working_dir, info);
         convert_svgs_to_pngs(working_dir);
         y = FIRST_CHARACTER_ROW_Y-i_mod*CHARACTER_ROW_HEIGHT;
@@ -570,8 +578,8 @@ def generate_sheet(makemeahanzi_path, working_dir, title, guide):
     y = PAGE_SIZE[1]-HEADER_PADDING-GRID_OFFSET/2 - \
         (CHARACTERS_PER_PAGE-1)*CHARACTER_ROW_HEIGHT;
     # TODO: extract
-    draw_footer(c, FOOTER_FONT_SIZE, y-CHARACTER_ROW_HEIGHT - \
-                    GRID_OFFSET/2);
+    # draw_footer(c, FOOTER_FONT_SIZE, y-CHARACTER_ROW_HEIGHT - \
+    #                 GRID_OFFSET/2);
     draw_page_number(c, page_number, PAGE_NUMBER_FONT_SIZE);
     draw_words(c, character_infos, words, page_number, \
             words_with_spanning_translation);
@@ -592,6 +600,7 @@ def get_guide(guide_str):
         raise GenException('Invalid guide ' + guide_str);
 
 def main(argv):
+    print("Starting")
     makemeahanzi = '';
     cedict = ''
     characters = '';
@@ -602,39 +611,49 @@ def main(argv):
     opts, args = getopt.getopt(argv, '', \
             ['makemeahanzi=', 'cedict=', 'characters=', \
             'title=', 'guide=', 'info', 'sheet']);
-    for opt, arg in opts:
-        if opt == '--makemeahanzi':
-            makemeahanzi = arg;
-        elif opt == '--cedict':
-            cedict = arg;
-        elif opt == '--characters':
-            characters = arg;
-        elif opt == '--title':
-            title = arg;
-        elif opt == '--guide':
-            guide = arg;
-        elif opt == '--info':
-            info_mode = True;
-        elif opt == '--sheet':
-            sheet_mode = True;
-        else:
-            usage();
-            exit(1);
+    # for opt, arg in opts:
+    #     if opt == '--makemeahanzi':
+    #         makemeahanzi = arg;
+    #     elif opt == '--cedict':
+    #         cedict = arg;
+    #     elif opt == '--characters':
+    #         characters = arg;
+    #     elif opt == '--title':
+    #         title = arg;
+    #     elif opt == '--guide':
+    #         guide = arg;
+    #     elif opt == '--info':
+    #         info_mode = True;
+    #     elif opt == '--sheet':
+    #         sheet_mode = True;
+    #     else:
+    #         usage();
+    #         exit(1);
+
 
     if info_mode == sheet_mode:
         info_mode = True;
         sheet_mode = True;
 
-    if makemeahanzi == '' \
-            or (info_mode and cedict == '') \
-            or (info_mode and characters == '') \
-            or (sheet_mode and not info_mode and characters != '') \
-            or (info_mode and not sheet_mode and title != ''):
-        usage();
-        exit(1);
+    characters='这是我的第一次来这里'
+    makemeahanzi = '/home/jasper/Github/cwg/makemeahanzi'
+    cedict = '/home/jasper/Github/cwg/cedict'
+    title = 'Vocabulary'
+    guide = 'star'
+
+    # if makemeahanzi == '' \
+    #         or (info_mode and cedict == '') \
+    #         or (info_mode and characters == '') \
+    #         or (sheet_mode and not info_mode and characters != '') \
+    #         or (info_mode and not sheet_mode and title != ''):
+    #     print("F")
+    #     usage();
+    #     exit(1);
 
     working_dir = os.getcwd();
+    print("pre")
     try:
+        print("post")
         guide_val = get_guide(guide);
         if info_mode == sheet_mode:
             generate_infos(makemeahanzi, cedict, working_dir, characters);
@@ -644,6 +663,7 @@ def main(argv):
         elif info_mode:
             generate_infos(makemeahanzi, cedict, working_dir, characters);
         else:
+            print("Generating")
             generate_sheet(makemeahanzi, working_dir, title, guide_val);
     except GenException as e:
         print(str(e));
